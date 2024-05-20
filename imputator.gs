@@ -30,9 +30,9 @@ function onEdit(e) {
     }
   }
 
-  if (range.getColumn() == 7 && range.getRow() > 1) {
+  if (range.getColumn() == headers["Issue Ticket"] && range.getRow() > 1) {
     var targetRow = range.getRow();
-    var issueCell = sheet.getRange(targetRow, 7).getValue();
+    var issueCell = sheet.getRange(targetRow, headers["Issue Ticket"]).getValue();
 
     if (issueCell != "") {
       var hyperlink = "";
@@ -41,11 +41,11 @@ function onEdit(e) {
         var hyperlink = '=HYPERLINK("' + issueCell + '"; "' + issueCell + '")';
       }
       else {
-        var issueKey = sheet.getRange(targetRow, 7).getValue().split(":")[0];
+        var issueKey = sheet.getRange(targetRow, headers["Issue Ticket"]).getValue().split(":")[0];
         var hyperlink = '=HYPERLINK("' + jiraApiUrl + '/browse/' + issueKey + '"; "' + issueCell + '")';
       }
       
-      sheet.getRange(targetRow, 7).setValue(hyperlink);
+      sheet.getRange(targetRow, headers["Issue Ticket"]).setValue(hyperlink);
     }
   }
 }
@@ -134,31 +134,6 @@ function getTickets() {
   }
 }
 
-function testSpreed() {
-  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = spreadsheet.getSheetByName("Imputator");
-
-  if (sheet) {
-    var day = sheet.getRange("A2").getValue();
-    var start = sheet.getRange("B2").getValue();
-    var end = sheet.getRange("C2").getValue();
-
-    var timeSpent = String((end - start)/(1000 * 60)) + "m";
-
-    var issueKey = sheet.getRange("G2").getValue().split(":")[0];
-    var comment = sheet.getRange("H2").getValue();
-
-    var startedHour = Utilities.formatDate(start, "Europe/Madrid", "HH:mm:ss.SSS'+0100'")
-    var started = Utilities.formatDate(day, "Europe/Madrid", "yyyy-MM-dd'T'") + startedHour;
-
-    Logger.log("datetime: " + started + " endHour: " + timeSpent);
-    //Logger.log("issueKey: " + issueKey + " comment: " + comment);
-
-  } else {
-    Logger.log("Sheet 'TEST' not found.");
-  }
-}
-
 function queryJiraAPI() {
   var jqlQuery = 'assignee = currentUser() AND (status not in (Resolved, Archived, Done, Closed, Declined, Completed, Cancel, Canceled)) order by created DESC';
 
@@ -222,5 +197,31 @@ function logWorkInJira(issueKey, timeSpent, comment, started) {
     Logger.log('Response content: ' + response.getContentText());
     var responseError = 'Response code: ' + response.getResponseCode() + ' ' + response.getContentText();
     return responseError;
+  }
+}
+
+////// Testing
+function testSpreed() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName("Imputator");
+
+  if (sheet) {
+    var day = sheet.getRange("A2").getValue();
+    var start = sheet.getRange("B2").getValue();
+    var end = sheet.getRange("C2").getValue();
+
+    var timeSpent = String((end - start)/(1000 * 60)) + "m";
+
+    var issueKey = sheet.getRange("G2").getValue().split(":")[0];
+    var comment = sheet.getRange("H2").getValue();
+
+    var startedHour = Utilities.formatDate(start, "Europe/Madrid", "HH:mm:ss.SSS'+0100'")
+    var started = Utilities.formatDate(day, "Europe/Madrid", "yyyy-MM-dd'T'") + startedHour;
+
+    Logger.log("datetime: " + started + " endHour: " + timeSpent);
+    //Logger.log("issueKey: " + issueKey + " comment: " + comment);
+
+  } else {
+    Logger.log("Sheet 'TEST' not found.");
   }
 }
