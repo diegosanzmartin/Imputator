@@ -2,17 +2,31 @@ var jiraApiUrl = 'https://makingscience.atlassian.net';
 var jiraApiToken = '';
 var jiraUsername = '';
 
+function getHeaders() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName("Imputator");
+  var headers = {};
+
+  for (var i = 1; i < sheet.getLastColumn(); i++) {
+    h = sheet.getRange(1, i).getValue();
+    headers[h] = i;
+  }
+
+  return headers;
+}
+
 function onEdit(e) {
   var sheet = e.source.getSheetByName('Imputator');
   var range = e.range;
+  var headers = getHeaders();
 
-  if (range.getColumn() == 2 && range.getRow() > 1) {
+  if (range.getColumn() == headers["Day"] && range.getRow() > 1) {
     var targetRow = range.getRow();
-    var value = sheet.getRange(targetRow, 1).getValue();
+    var value = sheet.getRange(targetRow, headers["Day"]).getValue();
 
     if (value == "") {
       var currentDate = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd");
-      sheet.getRange(targetRow, 1).setValue(currentDate);
+      sheet.getRange(targetRow, headers["Day"]).setValue(currentDate);
     }
   }
 
@@ -40,37 +54,36 @@ function imputeWorklog() {
   Logger.log('EDIT');
   var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = spreadsheet.getSheetByName("Imputator");
+  var headers = getHeaders();
 
   var lastRow = true;
-  var r = 2;
+  var r = 530;
 
   while(lastRow) {
-    var isImputed = sheet.getRange(r, 9).getValue();
-    var ticket = sheet.getRange(r, 7).getValue();
-    var status = sheet.getRange(r, 10).getValue();
+    var ticket = sheet.getRange(r, headers["Issue Ticket"]).getValue();
+    var comment = sheet.getRange(r, headers["Comment"]).getValue();
+    var isImputed = sheet.getRange(r, headers["Imputed"]).getValue();
+    var status = sheet.getRange(r, headers["Status"]).getValue();
 
-    if (isImputed == false && ticket != '' && status == '') {
-      var day = sheet.getRange(r, 1).getValue();
-      var start = sheet.getRange(r, 2).getValue();
-      var end = sheet.getRange(r, 3).getValue();
-      var issueCell = sheet.getRange(r, 7).getValue()
+    var day = sheet.getRange(r, headers["Day"]).getValue();
+    var start = sheet.getRange(r, headers["Start"]).getValue();
+    var end = sheet.getRange(r, headers["End"]).getValue();
 
-      if(issueCell.startsWith("http")) {
-        var issueKey = sheet.getRange(r, 7).getValue().split("/")[4];
+    if (isImputed == true && ticket != '' && status == '') {
+      if(ticket.startsWith("http")) {
+        var issueKey = ticket.split("/")[4];
       }
       else {
-        var issueKey = sheet.getRange(r, 7).getValue().split(":")[0];
+        var issueKey = ticket.split(":")[0];
       }
 
-      var comment = sheet.getRange(r, 8).getValue();
-      var startedHour = Utilities.formatDate(start, "Europe/Madrid", "HH:mm:ss.SSS'+0100'")
+      var startedHour = "09:00:00.000+0100";
       var started = Utilities.formatDate(day, "Europe/Madrid", "yyyy-MM-dd'T'") + startedHour;
       var timeSpent = String((end - start)/(1000 * 60)) + "m";
 
       response = logWorkInJira(issueKey, timeSpent, comment, started);
 
-      sheet.getRange(r, 10).setValue(response);
-      sheet.getRange(r, 9).setValue(true);
+      sheet.getRange(r, headers["Status"]).setValue(response);
     }
 
     if (isImputed == false 
@@ -79,7 +92,6 @@ function imputeWorklog() {
       && day == ''
       && start == ''
       && end == ''
-      && issueCell == ''
     ) {
       lastRow = false;
     }
